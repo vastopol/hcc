@@ -40,3 +40,7 @@ Possible Hardening/Obfuscation/Anti-reversing techniques:
 * Junk Code
 * Opaque Predicates
 
+## goal
+have the simple compiler output code for a vm
+the vm will then output the assembly code
+probably mips

@@ -1,0 +1,20 @@
+For specifications see:
+
+The MINI-L Source Code Language
+https://www.cs.ucr.edu/~gkaur007/webpages/mini_l.html
+
+Syntax Diagrams for the MINI-L Language
+https://www.cs.ucr.edu/~gkaur007/webpages/syntax.html
+
+Output Format for Lexical Analyzer
+https://www.cs.ucr.edu/~gkaur007/webpages/token_list_format.html
+
+Output Format for Parser
+https://www.cs.ucr.edu/~gkaur007/webpages2/production_rule_format.html
+
+Output Format for Code Generator
+https://www.cs.ucr.edu/~gkaur007/webpages3/code_output_format.html
+
+The MIL Intermediate Code Representation
+https://www.cs.ucr.edu/~gkaur007/webpages3/mil.html
+
