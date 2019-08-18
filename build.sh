@@ -3,7 +3,7 @@
 FOLDER="cc"
 FILES="tests"
 COMP="cc/compiler"
-MILR="tests/mil_run"
+MILR="sim/mil_run"
 
 #----------------------------------------
 
