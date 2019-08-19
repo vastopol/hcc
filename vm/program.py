@@ -1,9 +1,4 @@
-#!/usr/bin/python3
-
-import sys
-import copy
-
-# ----------------------------------------
+# Program representation during the transform from IR to ASM
 
 class Program():
 
@@ -22,7 +17,7 @@ class Program():
 
     # write out the MIPS assembly code file
     def output(self,ofile):
-        stub = ".text\njal main\nli $v0, 10\nsyscall\n\n"  # stub for jump to main
+        stub = ".text\n.globl main\njal main\nli $v0, 10\nsyscall\n\n"  # stub for jump to main
         ofile.write(stub)
         for f in self.assembly:
             for g in self.assembly[f]:
@@ -204,23 +199,3 @@ class Program():
             for g in self.functions[f]:
                 print(g)
             print()
-
-# ----------------------------------------
-
-def main(arg):
-    in_file = open(arg,"r")
-    out_file = open("out.asm","w")
-    p = Program()
-    p.input(in_file)
-    p.obfuscate()
-    p.output(out_file)
-
-# ----------------------------------------
-
-if __name__ == '__main__':
-    args = sys.argv[1:]
-    if len(args) == 0:
-        print("Error: missing arguments")
-        print("Usage: ./vm.py file")
-        exit(1)
-    main(args[0])

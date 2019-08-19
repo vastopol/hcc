@@ -71,28 +71,30 @@ the function when called has to check v1 and see how many args to pop from the s
 
  * stack
     So if you use this to push $t2:
-
+    ```
     sub $sp,$sp,4
     sw $t2,($sp)
+    ```
 
     You would pop $t2 with:
-
+    ```
     lw $t2,($sp)
     addiu $sp,$sp,4
+    ```
 
 * calls
 
+    ```
     # function enter
-
     sub $sp,$sp,4
     sw $ra,4($sp)
-
+    ...
     # function exit
-
     lw $ra,4($sp) # pop ra
     add $sp,$sp,4
     jr $ra # return
 
+    ...
 
     # prologue
     sw $fp -8($sp)
@@ -105,3 +107,34 @@ the function when called has to check v1 and see how many args to pop from the s
     lw $fp -8($fp)
     addu $sp $sp <size of args>
     jr $ra
+    ```
+
+Passing Arguments: The General Way
+In nested procedures, we may have to save argument values on the stack.
+Sometimes, we’ll have too many arguments to fit into 4 registers, or too many return values.
+General Answer: use the stack.
+• Caller pushes arguments and space for results.
+• Callee uses arguments and fills in results.
+• Caller pops everything.
+
+```
+# average the values in $s0 and $s1, put the result in $s2
+    sub $sp,$sp,12 # space for rslt.
+    sw $s0,8($sp)  # push 1st param
+    sw $s1,12($sp) # push 2nd param
+    jal average
+    lw $s2,4($sp)  # get result
+    add $sp,$sp,12
+    done
+average:
+    sub $sp,$sp,4
+    sw $ra,4($sp)
+    lw $t0,12($sp) # load 1st param
+    lw $t1,16($sp) # load 2nd param
+    add $t0,$t0,$t1
+    div $t0,$t0,2
+    sw $t0,8($sp)  # store result
+    lw $ra,4($sp)  # pop ra
+    add $sp,$sp,4
+    jr $ra # return
+```
