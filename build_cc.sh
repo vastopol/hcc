@@ -100,6 +100,8 @@ function clean_up()
 
     rm *.ir *.asm
 
+    rm -rf vm/__pycache__
+
     cd $FOLDER
     make clean
     cd ..

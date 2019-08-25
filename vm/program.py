@@ -1,6 +1,6 @@
 # Program representation during the transform from IR to ASM
 
-import boltons.iterutils
+import boltons.iterutils    # need: boltons.iterutils.chunked()
 
 class Program():
 
@@ -9,6 +9,8 @@ class Program():
         self.functions = dict()  # ir function blocks
         self.assembly  = dict()  # assembly instructions for functions
 
+    #----------------------------------------
+
     # read in the IR code file
     def input(self,ifile):
         for i in ifile:
@@ -16,6 +18,8 @@ class Program():
             l = list( filter( lambda x: x is not '' , k ) )
             if l != list():
                 self.buffer.append(l)
+
+    #----------------------------------------
 
     # write out the MIPS assembly code file
     def output(self,ofile):
@@ -26,6 +30,8 @@ class Program():
                 ofile.write(str(g))
             ofile.write("\n")
 
+    #----------------------------------------
+
     # wrapper around the internal obfuscation steps
     def obfuscate(self):
         """
@@ -33,10 +39,10 @@ class Program():
         2. Translate into MIPS
         """
         self.split_ir()
-        self.print_ir()
         self.minimize_ir()
-        self.print_ir()
         self.translate_ir()
+
+    #----------------------------------------
 
     # break up and reorganize IR
     def split_ir(self):
@@ -63,8 +69,20 @@ class Program():
             else:
                 code.append(b)
 
+    #----------------------------------------
+
     # minimize the IR before translation
     def minimize_ir(self):
+        self.print_ir()
+        self.minimize1() # assign assign
+        self.minimize2() # read assign
+        self.minimize3() # assign param
+        self.print_ir()
+
+    #----------------------------------------
+
+    # assign assign
+    def minimize1(self):
         for foo in self.functions:
             fname = foo
             fhead = self.functions[foo][0]
@@ -120,6 +138,130 @@ class Program():
 
             minifun = [fhead] + icode + [ftail]
             self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # read assign
+    def minimize2(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+            gcode = boltons.iterutils.chunked(ecode,2)
+
+            for g in gcode:
+                if g[0][0] == ".<" and g[1][0] == "=":  # read assign: .< x; = t0, x
+                    if str(g[0][1]) == str(g[1][2]):
+                        if str(g[1][1])[0] == '_':  # only remove temps (_T...)
+                            remline.append(g[1])
+                            remvars[ str(g[1][1])[:-1] ] = g[0][1]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # assign param
+    def minimize3(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+            gcode = boltons.iterutils.chunked(ecode,2)
+
+            for g in gcode:
+                if g[0][0] == "=" and g[1][0] == "param":  # param assign: t0 = x; param t0
+                    if str(g[0][1])[:-1] == str(g[1][1]):
+                        print('a')
+                        if str(g[1][1])[0] == '_':  # only remove temps (_T...)
+                            print('b')
+                            remline.append(g[1])
+                            remvars[ str(g[1][1])[:-1] ] = g[1][1]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
 
     # translate IR to MIPS
     def translate_ir(self):
@@ -252,9 +394,13 @@ class Program():
                         push_i = "sub $sp, $sp, 4\nsw $t0, ($sp)\n" # push $t0
                         asm.append(imm_i + push_i)
 
+    #----------------------------------------
+
     # debug info
     def print_ir(self):
         for f in self.functions:
             for g in self.functions[f]:
                 print(g)
             print()
+
+    #----------------------------------------
