@@ -98,7 +98,7 @@ function clean_up()
     echo "Clean up:"
     echo
 
-    rm out.*
+    rm *.ir *.asm
 
     cd $FOLDER
     make clean

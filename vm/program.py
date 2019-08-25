@@ -1,5 +1,7 @@
 # Program representation during the transform from IR to ASM
 
+import boltons.iterutils
+
 class Program():
 
     def __init__(self):
@@ -30,24 +32,25 @@ class Program():
         1. Split and Process IR
         2. Translate into MIPS
         """
-        self.split()
+        self.split_ir()
         self.print_ir()
-        self.translate()
+        self.minimize_ir()
+        self.print_ir()
+        self.translate_ir()
 
-    # break up IR
-    def split(self):
+    # break up and reorganize IR
+    def split_ir(self):
         name = str()
         data = list()  # not used yet
         code = list()
 
         # separating code and data
         for b in self.buffer:
-            if   b[0] == "func":
+            if b[0] == "func":
                 name = b[1]
                 code.append(b)
             elif b[0] == "endfunc":
                 code.append(b)
-                # self.functions[name] = code
                 self.functions[name] = [code[0]] + data + code[1:]
                 name = ""
                 code = list()
@@ -57,13 +60,69 @@ class Program():
                 data.append(b)
             elif b[0] == ".[]":  # array declaration
                 data.append(b)
-            elif b[0] == "=":    # int immediate
-                code.append(b)
             else:
                 code.append(b)
 
+    # minimize the IR before translation
+    def minimize_ir(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+            gcode = boltons.iterutils.chunked(ecode,2)
+
+            for g in gcode:
+                if g[0][0] == "=" and g[1][0] == "=":  # 2 assigns in a row: t0 = x; t1 = t0
+                    if str(g[0][1])[:-1] == str(g[1][2]):
+                        if str(g[1][1])[0] == '_':  # only remove temps (_T...)
+                            remline.append(g[1])
+                            remvars[ str(g[1][1])[:-1] ] = g[1][2]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
     # translate IR to MIPS
-    def translate(self):
+    def translate_ir(self):
         fname = str()
         asm = list()
 
@@ -72,7 +131,7 @@ class Program():
             fname = f
             for g in self.functions[f]:
                 # begin function
-                if   g[0] == "func":
+                if g[0] == "func":
                     header  = g[1] + ":\n"
                     # pop params into the s regs ??
                     push_ra = "sub $sp, $sp, 4\nsw $ra, 4($sp)\n"  # push $ra
