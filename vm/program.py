@@ -47,7 +47,7 @@ class Program():
     # break up and reorganize IR
     def split_ir(self):
         name = str()
-        data = list()  # not used yet
+        data = list()
         code = list()
 
         # separating code and data
@@ -57,7 +57,11 @@ class Program():
                 code.append(b)
             elif b[0] == "endfunc":
                 code.append(b)
-                self.functions[name] = [code[0]] + data + code[1:]
+                data_set = list()
+                for d in data:
+                    if d not in data_set:
+                        data_set.append(d)
+                self.functions[name] = [code[0]] + data_set + code[1:]
                 name = ""
                 code = list()
                 data = list()
@@ -77,6 +81,8 @@ class Program():
         self.minimize1() # assign assign
         self.minimize2() # read assign
         self.minimize3() # assign param
+        self.minimize4() # call assign
+        self.minimize5() # op assign
         self.print_ir()
 
     #----------------------------------------
@@ -223,11 +229,129 @@ class Program():
             for g in gcode:
                 if g[0][0] == "=" and g[1][0] == "param":  # param assign: t0 = x; param t0
                     if str(g[0][1])[:-1] == str(g[1][1]):
-                        print('a')
                         if str(g[1][1])[0] == '_':  # only remove temps (_T...)
-                            print('b')
                             remline.append(g[1])
                             remvars[ str(g[1][1])[:-1] ] = g[1][1]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # call assign
+    def minimize4(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+            gcode = boltons.iterutils.chunked(ecode,2)
+
+            for g in gcode:
+                if g[0][0] == "call" and g[1][0] == "=":  # call assign: t0 = call f; t1 = t0
+                    if str(g[0][2]) == str(g[1][2]):
+                        if str(g[1][2])[0] == '_':  # only remove temps (_T...)
+                            remline.append(g[1])
+                            remvars[ str(g[0][2]) ] = g[1][1][:-1]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # op assign
+    def minimize5(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+            gcode = boltons.iterutils.chunked(ecode,2)
+
+            for g in gcode:
+                if len(g[0]) == 4 and g[1][0] == "=":  # op assign: t2 = op(t0,t1) f; t3 = t2
+                    if str(g[0][1])[:-1] == str(g[1][2]):
+                        if str(g[1][1])[0] == '_':  # only remove temps (_T...)
+                            remline.append(g[1])
+                            remvars[ str(g[1][1])[:-1] ] = str(g[0][1])[:-1]
 
             # print(); [ print(r) for r in remline ]; print()
             # print(); [ print(r) for r in remvars ]; print()
@@ -396,11 +520,19 @@ class Program():
 
     #----------------------------------------
 
-    # debug info
+    # debug/info
     def print_ir(self):
         for f in self.functions:
+            foo = str()
             for g in self.functions[f]:
-                print(g)
-            print()
+                s = str()
+                for h in g:
+                    s = s + str(h) + ' '
+                s = s[:-1]  # rm last space, errors for mil_run interpreter
+                s += '\n'
+                if g[0] != "func" and g[0] != "endfunc" and g[0] != ":":
+                    s = '\t' + s
+                foo += s
+            print(foo)
 
     #----------------------------------------

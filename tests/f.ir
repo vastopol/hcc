@@ -1,0 +1,60 @@
+func fibonacci
+. k
+= k, $0
+. _T0
+= _T0, k
+. _T1
+= _T1, 1
+. _T2
+<= _T2, _T0, _T1
+. _T3
+= _T3, _T2
+?:= _L6, _T3
+:= _L7
+: _L6
+. _T4
+= _T4, 1
+. _T5
+= _T5, _T4
+ret _T5
+: _L7
+. _T8
+= _T8, k
+. _T9
+= _T9, 1
+. _T10
+- _T10, _T8, _T9
+param _T10
+. _T11
+call fibonacci, _T11
+. _T12
+= _T12, k
+. _T13
+= _T13, 2
+. _T14
+- _T14, _T12, _T13
+param _T14
+. _T15
+call fibonacci, _T15
+. _T16
++ _T16, _T11, _T15
+. _T17
+= _T17, _T16
+ret _T17
+endfunc
+
+func main
+. n
+. fib_n
+.< n
+. _T18
+= _T18, n
+param _T18
+. _T19
+call fibonacci, _T19
+= fib_n, _T19
+. _T20
+= _T20, fib_n
+.> _T20
+endfunc
+
