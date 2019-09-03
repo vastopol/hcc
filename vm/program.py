@@ -83,8 +83,10 @@ class Program():
         self.minimize3() # assign param
         self.minimize4() # call assign
         self.minimize5() # op assign
+        self.minimize6() # var propagate
+        self.minimize7() # params -- pass 1
+        self.minimize7() # params -- pass 2
         self.print_ir()
-
     #----------------------------------------
 
     # assign assign
@@ -352,6 +354,123 @@ class Program():
                         if str(g[1][1])[0] == '_':  # only remove temps (_T...)
                             remline.append(g[1])
                             remvars[ str(g[1][1])[:-1] ] = str(g[0][1])[:-1]
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # var propagate
+    def minimize6(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+
+            for g in ecode:
+                if g[0] == "=" and str(g[2]).isdigit():  # int
+                        remline.append(g)
+                        remvars[ str(g[1])[:-1] ] = str(g[2])
+                elif g[0] == "=" and str(g[2])[0] is '_':
+                        remline.append(g)
+                        remvars[ str(g[1])[:-1] ] = str(g[2])
+
+            # print(); [ print(r) for r in remline ]; print()
+            # print(); [ print(r) for r in remvars ]; print()
+
+            hcode = list()
+            icode = list()
+
+            for f in fcode:
+                if f in remline:
+                    continue
+                else:
+                    hcode.append(f)
+
+            for h in hcode:
+                line = h
+                for r in remvars:
+                    if r in line or r+',' in line:
+                        if h[0] == ".":  # discard the declarations
+                            line = None
+                            break
+                        for p in range(len(h)):
+                            if h[p] == r:
+                                line[p] = remvars[r]
+                                break
+                            elif h[p] == r+',':
+                                line[p] = remvars[r]+','
+                                break
+                if line:
+                    icode.append(line)
+
+            minifun = [fhead] + icode + [ftail]
+            self.functions[foo] = minifun
+
+    #----------------------------------------
+
+    # params
+    def minimize7(self):
+        for foo in self.functions:
+            fname = foo
+            fhead = self.functions[foo][0]
+            ftail = self.functions[foo][-1]
+            fcode = self.functions[foo][1:-1]
+
+            ecode = list()
+            for fuu in fcode:
+                if fuu[0] == ".":
+                    continue
+                else:
+                    ecode.append(fuu)
+
+            remline = list()
+            remvars = dict()
+
+            for g in ecode:
+                if g[0] == "=" and str(g[2])[0] is '$':
+                        remline.append(g)
+                        remvars[ str(g[1])[:-1] ] = str(g[2])
 
             # print(); [ print(r) for r in remline ]; print()
             # print(); [ print(r) for r in remvars ]; print()
