@@ -1,0 +1,10 @@
+function main;
+beginparams
+endparams
+beginlocals
+	m : integer;
+endlocals
+beginbody
+	m := 100;
+	write m;
+endbody

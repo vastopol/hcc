@@ -1,8 +1,8 @@
 # hcc
 
-hacker's compiler collection (hcc)
+Hacker's Compiler Collection (hcc)
 
-This project is still in the idea stage.
+`$ cc/compiler tests/a.min > tests/a.ir; cat tests/a.ir; ./hcc.py tests/a.ir; cat out.asm`
 
 ## Goals
 

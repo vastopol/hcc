@@ -1,0 +1,10 @@
+func main
+. m
+. _T0
+= _T0, 100
+= m, _T0
+. _T1
+= _T1, m
+.> _T1
+endfunc
+

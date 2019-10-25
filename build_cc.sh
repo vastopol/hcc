@@ -14,7 +14,7 @@ function main()
         exit 0
     fi
 
-    build_cc
+    build_cc; echo
     # test_cc
 }
 
@@ -95,6 +95,7 @@ function test_cc()
 # remove generated files from build
 function clean_up()
 {
+    echo
     echo "Clean up:"
     echo
 

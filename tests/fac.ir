@@ -1,0 +1,53 @@
+func factorial
+. k
+= k, $0
+. _T0
+= _T0, k
+. _T1
+= _T1, 1
+. _T2
+<= _T2, _T0, _T1
+. _T3
+= _T3, _T2
+?:= _L6, _T3
+:= _L7
+: _L6
+. _T4
+= _T4, 1
+. _T5
+= _T5, _T4
+ret _T5
+: _L7
+. _T8
+= _T8, k
+. _T9
+= _T9, k
+. _T10
+= _T10, 1
+. _T11
+- _T11, _T9, _T10
+param _T11
+. _T12
+call factorial, _T12
+. _T13
+* _T13, _T8, _T12
+. _T14
+= _T14, _T13
+ret _T14
+endfunc
+
+func main
+. n
+. fac_n
+.< n
+. _T15
+= _T15, n
+param _T15
+. _T16
+call factorial, _T16
+= fac_n, _T16
+. _T17
+= _T17, fac_n
+.> _T17
+endfunc
+

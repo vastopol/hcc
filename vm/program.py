@@ -36,10 +36,11 @@ class Program():
     def obfuscate(self):
         """
         1. Split and Process IR
-        2. Translate into MIPS
+        2. Minimize IR (optional)
+        3. Translate into MIPS
         """
         self.split_ir()
-        self.minimize_ir()
+        self.minimize_ir()  # doesn't always work
         self.translate_ir()
 
     #----------------------------------------
@@ -77,8 +78,9 @@ class Program():
 
     # minimize the IR before translation
     def minimize_ir(self):
-        # self.print_ir()
-        # print('-'*40+'\n')
+        print('-'*40+'\n')
+        self.print_ir()
+        print('-'*40+'\n')
         self.minimize1() # assign assign
         self.minimize2() # read assign
         self.minimize3() # assign param
@@ -88,6 +90,7 @@ class Program():
         self.minimize7() # params -- pass 1
         self.minimize7() # params -- pass 2
         self.print_ir()
+        print('-'*40+'\n')
     #----------------------------------------
 
     # assign assign
@@ -652,11 +655,11 @@ class Program():
                     push_i = "sw $v0, " + str( locals[g[1]]*4 ) + "($sp)\n"   # push $v0
                     asm.append(read_i + push_i)
                 # immediate int
-                # elif g[0] == "=":
-                #     if g[2].isdigit():
-                #         imm_i  = "li $t0, " + g[2] + "\n"
-                #         push_i = "sub $sp, $sp, 4\nsw $t0, ($sp)\n" # push $t0
-                #         asm.append(imm_i + push_i)
+                elif g[0] == "=":
+                    if g[2].isdigit():
+                        imm_i  = "li $t0, " + g[2] + "\n"
+                        push_i = "sw $t0, " + str( locals[g[1][:-1]]*4 ) + "($sp)\n"   # push $v0
+                        asm.append(imm_i + push_i)
 
     #----------------------------------------
 
